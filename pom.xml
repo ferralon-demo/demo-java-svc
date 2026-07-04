@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>com.example</groupId>
+  <artifactId>demo-java-svc</artifactId>
+  <version>1.0.0</version>
+  <packaging>war</packaging>
+  <name>demo-java-svc</name>
+  <description>A small, genuinely runnable Spring MVC web service used as a static
+    dependency-advisory scan fixture. Deliberately curated so a single dependency-and-
+    reachability scan emits the honest verdict spread across three real advisories.</description>
+
+  <properties>
+    <maven.compiler.release>11</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- Hero (CVE-2022-22965 / Spring4Shell): spring-webmvc + spring-beans pinned to the
+         last release BEFORE the 5.3.18 fix. On JDK 9+ in a Tomcat WAR the data binder can
+         walk class.module.classLoader.* from a request-bound POJO. The patched ref bumps
+         this single property to 5.3.18 (the exact fix) for the PoNE two-trace. -->
+    <spring.version>5.3.17</spring.version>
+
+    <!-- Guarded (CVE-2019-17531 / jackson-databind polymorphic deserialization): present
+         in the graph at a matching version, but Default Typing is never enabled and no
+         polymorphic base is bound from untrusted input, so the gadget sink is unreachable. -->
+    <jackson.version>2.9.9</jackson.version>
+
+    <!-- Disqualified (CVE-2012-0838 / CVE-2016-3087 — Struts 2 OGNL / REST-plugin RCE):
+         the dependency is present but pinned well PAST the affected range, so those
+         advisories are provably out of scope by version. It is a declared graph dependency
+         only — it is not wired into any request path in this service. -->
+    <struts.version>6.4.0</struts.version>
+  </properties>
+
+  <dependencies>
+    <!-- Spring MVC. Transitively resolves spring-beans/context/core/web/expression at the
+         same pinned version — spring-beans is the CVE-2022-22965 advisory target. -->
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-webmvc</artifactId>
+      <version>${spring.version}</version>
+    </dependency>
+
+    <!-- jackson-databind: used for ordinary concrete-DTO JSON binding on /echo. -->
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+      <version>${jackson.version}</version>
+    </dependency>
+
+    <!-- Struts 2 core: present in the dependency graph at a patched version (disqualified
+         by version). Not registered as a servlet filter and not reachable from any route. -->
+    <dependency>
+      <groupId>org.apache.struts</groupId>
+      <artifactId>struts2-core</artifactId>
+      <version>${struts.version}</version>
+    </dependency>
+
+    <!-- Servlet API is provided by the Tomcat container (Servlet 4.0 / javax namespace). -->
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <version>4.0.1</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>ROOT</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-war-plugin</artifactId>
+        <version>3.4.0</version>
+        <configuration>
+          <!-- Web config is programmatic (AppInitializer / WebApplicationInitializer),
+               so there is no WEB-INF/web.xml. -->
+          <failOnMissingWebXml>false</failOnMissingWebXml>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,6 @@
+# Keep the build context lean: the proof sandbox only needs the Maven build inputs.
+.git
+.github
+.ferralon
+target
+*.md
