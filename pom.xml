@@ -21,7 +21,7 @@
          last release BEFORE the 5.3.18 fix. On JDK 9+ in a Tomcat WAR the data binder can
          walk class.module.classLoader.* from a request-bound POJO. The patched ref bumps
          this single property to 5.3.18 (the exact fix) for the PoNE two-trace. -->
-    <spring.version>5.3.17</spring.version>
+    <spring.version>5.3.18</spring.version>
 
     <!-- Guarded (CVE-2019-17531 / jackson-databind polymorphic deserialization): present
          in the graph at a matching version, but Default Typing is never enabled and no
