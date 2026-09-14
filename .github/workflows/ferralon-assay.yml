@@ -58,11 +58,12 @@ jobs:
 
       - name: Run the Ferralon Assay
         id: scan
-        # Pinned scanner delivery via the composite Action (fetches a versioned scanner
-        # release at run time and builds nothing — no binary committed to this repo). The
-        # Action's own scanner-version default pins the exact scanner bytes it fetches;
-        # scanner-sha256 is a consumer opt-in checksum pin, left unset here.
-        uses: ferralon-ai/ferralon-assay@v0.3.0
+        # Scanner delivery via the composite Action (fetches a versioned scanner
+        # release at run time and builds nothing — no binary committed to this repo). We
+        # follow the moving @v0.3 alias so patch releases land without per-patch churn;
+        # scanner bytes still stay exact via the alias leaf's scanner-version default.
+        # scanner-sha256 is a consumer opt-in exact-patch checksum pin, left unset here.
+        uses: ferralon-ai/ferralon-assay@v0.3
         with:
           mode: baseline
           target: .
