@@ -7,18 +7,17 @@
 # sync with FERRALON_SCAN.md.
 #
 # What it does, in the runner (no source leaves the repo):
-#   1. resolves this Maven module's dependency graph and runs the prebuilt Ferralon scanner
-#      over it -> a schema-valid tegron.report.v1 report.json (the neutral scan spine);
+#   1. resolves this Maven module's dependency graph and runs the pinned ferralon-assay
+#      scanner over it -> a schema-valid tegron.report.v1 report.json (the neutral scan
+#      spine);
 #   2. on the default branch, persists the StateStore to refs/tegron/state (the ref the
 #      backend's in-repo reader keys off — pinned by cross-team contract, ADR-0015);
-#   3. files a Ferralon-branded, codename-free pivot Issue linking to the console;
-#   4. POSTs a thin metadata allowlist (no source / no PII) to the backend's OIDC ingest
-#      endpoint — fires automatically on every default-branch run against the deployed
-#      backend (the endpoint is a known default; a repo/org var can override).
+#   3. uses the scanner's OWN customer-facing surfaces — a pinned Issue and a sticky PR
+#      comment — this repo carries no custom pivot-Issue script, unlike demo-go-svc.
 #
-# The Java-capable scanner distribution follows the same pinned/checksummed path as the
-# other demo fixtures (see FERRALON_SCAN.md, "How the scanner is distributed"); the runner
-# executes it against the resolved dependency set produced below.
+# The scanner is delivered by the pinned, checksummed `ferralon-ai/ferralon-assay` Action
+# (tag-pinned below), which fetches a versioned scanner release at run time — no binary is
+# committed to this repository.
 
 name: Ferralon Assay
 
@@ -41,9 +40,10 @@ jobs:
     name: Ferralon Assay
     runs-on: ubuntu-latest
     permissions:
-      contents: write      # persist the StateStore ref (refs/tegron/state) on the default branch
-      issues: write        # file/update the Ferralon pivot Issue
-      id-token: write      # request the GitHub Actions OIDC token for the ingest POST
+      contents: write       # persist the StateStore ref (refs/tegron/state) on the default branch
+      issues: write         # the scanner's own pinned-Issue surface
+      pull-requests: write  # the scanner's own sticky PR-comment surface
+      id-token: write       # request the GitHub Actions OIDC token for the ingest POST
     steps:
       - uses: actions/checkout@v4
 
@@ -58,10 +58,19 @@ jobs:
 
       - name: Run the Ferralon Assay
         id: scan
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
-        run: |
-          echo "Ferralon Assay: scanning the resolved Maven dependency graph."
-          # The pinned Ferralon scanner reads the resolved dependency set + the public
-          # advisory feeds and writes a tegron.report.v1 report.json. Scanner distribution
-          # is the tracked follow-on documented in FERRALON_SCAN.md.
+        # Pinned scanner delivery via the composite Action (fetches a versioned scanner
+        # release at run time and builds nothing — no binary committed to this repo). The
+        # Action's own scanner-version default pins the exact scanner bytes it fetches;
+        # scanner-sha256 is a consumer opt-in checksum pin, left unset here.
+        uses: ferralon-ai/ferralon-assay@v0.3.0
+        with:
+          mode: baseline
+          target: .
+          out: ${{ runner.temp }}/out
+          subject-repo: ${{ github.repository }}
+          revision: ${{ github.ref_name }}
+          commit: ${{ github.sha }}
+          # Persist the durable StateStore ref only on the default branch (the baseline
+          # posture). A PR run — github.ref_name is "<n>/merge" — stays stateless.
+          state-ref: refs/tegron/state
+          state-repo: ${{ github.ref_name == github.event.repository.default_branch && github.repository || '' }}
