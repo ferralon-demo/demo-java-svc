@@ -18,6 +18,16 @@
 # The scanner is delivered by the pinned, checksummed `ferralon-ai/ferralon-assay` Action
 # (tag-pinned below), which fetches a versioned scanner release at run time — no binary is
 # committed to this repository.
+#
+# FIXTURE LAYOUT STANDARD (pipeline-test 1.3, 2026-09-22). `vulnerable` is the GOLDEN
+# reference: never scanned, never the default branch, protected per repo in the backend.
+# `main` is the default branch, the only scanned branch, and the disposable fire target — reset
+# from `vulnerable` with `.demo/prep-demo.sh`. The push filter below names `main` so a push to
+# the golden branch produces no scan run that a later fire could target. GitHub matches this
+# filter against the copy of this file ON THE PUSHED BRANCH, so `vulnerable`'s copy must name
+# `main` too — prep-demo.sh resets `main` from `vulnerable`, so that copy is the one that
+# survives. The `schedule` trigger runs on whatever branch is the default, so the golden
+# branch's exclusion also depends on the default branch staying `main`.
 
 name: Ferralon Assay
 
@@ -26,10 +36,9 @@ on:
     - cron: "23 7 * * *"   # daily, deliberately off the top of the hour
   workflow_dispatch:
   push:
-    # Scope push to the default branch so a branch with an open PR doesn't raise both a push
-    # and a pull_request check on the same SHA. If the default branch ever changes from
-    # "vulnerable", update this filter in lockstep.
-    branches: [vulnerable]
+    # The disposable default branch only (see FIXTURE LAYOUT STANDARD above). branches:
+    # cannot use a default_branch expression, so the name is hardcoded.
+    branches: [main]
   pull_request:
 
 permissions:
