@@ -72,7 +72,7 @@ jobs:
         # follow the moving @v0.3 alias so patch releases land without per-patch churn;
         # scanner bytes still stay exact via the alias leaf's scanner-version default.
         # scanner-sha256 is a consumer opt-in exact-patch checksum pin, left unset here.
-        uses: ferralon-ai/ferralon-assay@v0.3
+        uses: ferralon-ai/ferralon-assay@v0.5
         with:
           mode: baseline
           target: .
